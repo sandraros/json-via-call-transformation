@@ -1,0 +1,14 @@
+<?sap.transform simple?>
+<tt:transform xmlns:tt="http://www.sap.com/transformation-templates" xmlns:ddic="http://www.sap.com/abapxml/types/dictionary">
+  <tt:root name="ABAPROOT"/>
+  <tt:template>
+    <array>
+      <tt:loop ref="ABAPROOT">
+        <object>
+           <str name="carrid" tt:value-ref="CARRID"/>
+           <str name="CONNID" tt:value-ref="CONNID"/>
+        </object>
+      </tt:loop>
+    </array>
+  </tt:template>
+</tt:transform>
