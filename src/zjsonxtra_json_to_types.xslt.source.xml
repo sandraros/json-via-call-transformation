@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+
+  <xsl:output method="text" indent="no"/>
+  <xsl:strip-spaces elements="*"/>
+
+
+  <xsl:template match="/">
+    <xsl:apply-templates select="*"/>
+    <xsl:choose>
+      <xsl:when test="count(/array)=1"><xsl:text>DATA main_json TYPE tt_main.
+</xsl:text></xsl:when>
+      <xsl:otherwise><xsl:text>DATA main_json TYPE ty_main.
+</xsl:text></xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+
+  <xsl:template match="array">
+
+    <xsl:apply-templates select="*[1]"/>
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:text>TYPES tt_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text> TYPE STANDARD TABLE OF ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text> WITH EMPTY KEY.
+</xsl:text>
+
+  </xsl:template>
+
+
+  <xsl:template match="object">
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:text>TYPES BEGIN OF ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text>.
+</xsl:text>
+
+    <xsl:apply-templates select="*"/>
+
+    <xsl:text>TYPES END OF ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text>.
+</xsl:text>
+
+  </xsl:template>
+
+
+  <xsl:template match="num">
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:text>TYPES ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text> TYPE decfloat34.
+</xsl:text>
+
+  </xsl:template>
+
+
+  <xsl:template match="str">
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:value-of select="concat('TYPES ty_',$name,' TYPE string. &quot; JSON: &quot;',$name,'&quot;:&quot;',string(.),'&quot;&#10;')"/>
+
+  </xsl:template>
+
+
+  <xsl:template match="bool">
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:text>TYPES ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text> TYPE abap_bool.
+</xsl:text>
+
+  </xsl:template>
+
+
+  <xsl:template match="null">
+
+    <xsl:variable name="name">
+      <xsl:call-template name="NAME">
+        <xsl:with-param name="NAME" select="@name"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:text>TYPES ty_</xsl:text>
+    <xsl:value-of select="$name"/>
+    <xsl:text> TYPE string. "null
+</xsl:text>
+
+  </xsl:template>
+
+
+  <xsl:template name="NAME">
+
+    <xsl:param name="NAME"/>
+
+    <xsl:choose>
+      <xsl:when test="string($NAME)!=''"><xsl:value-of select="$NAME"/></xsl:when>
+      <xsl:when test="string($NAME/../@name)!=''"><xsl:value-of select="$NAME/../@name"/></xsl:when>
+      <xsl:otherwise>main</xsl:otherwise>
+    </xsl:choose>
+
+  </xsl:template>
+
+</xsl:stylesheet>

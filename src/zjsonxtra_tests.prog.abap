@@ -47,7 +47,7 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           object_locked_by_other_user    = 7
           object_modified                = 8
           permission_failure             = 9
-          others                         = 10 ).
+          OTHERS                         = 10 ).
       cl_o2_api_xsltdesc=>prepare_source_table(
         IMPORTING
           e_source_table = lt_source
@@ -57,7 +57,7 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
         EXPORTING
           p_source = lt_source
         EXCEPTIONS
-          others   = 1 ).
+          OTHERS   = 1 ).
     ELSE.
       cl_o2_api_xsltdesc=>create_new_from_string(
         EXPORTING
@@ -93,8 +93,6 @@ CLASS ltc_deserialize_id DEFINITION
   PRIVATE SECTION.
 
     DATA xsdany TYPE xsdany.
-    DATA xstring TYPE xstring.
-    DATA string TYPE string.
     DATA json_not_asjson TYPE string.
     DATA asjson TYPE string.
     DATA xml_not_json_xml TYPE string.
@@ -107,7 +105,8 @@ CLASS ltc_deserialize_id DEFINITION
            ty_flights TYPE STANDARD TABLE OF ty_flight WITH EMPTY KEY.
     DATA flights TYPE ty_flights.
 
-    METHODS not_asjson_xsdany FOR TESTING.
+    METHODS json_xsdany FOR TESTING.
+    METHODS json_xsdany_empty_member_key FOR TESTING.
     METHODS not_asjson_jsonxml FOR TESTING.
     METHODS asjson_to_simple FOR TESTING.
     METHODS asjson_to_structur FOR TESTING.
@@ -122,13 +121,6 @@ CLASS ltc_deserialize_z_transfo DEFINITION
 
   PRIVATE SECTION.
 
-    DATA xsdany TYPE xsdany.
-    DATA xstring TYPE xstring.
-    DATA string TYPE string.
-    DATA json_not_asjson TYPE string.
-    DATA asjson TYPE string.
-    DATA xml_not_json_xml TYPE string.
-    DATA json_xml TYPE string.
     DATA lx TYPE REF TO cx_root.
     TYPES: BEGIN OF ty_flight,
              carrid TYPE string,
@@ -141,9 +133,29 @@ CLASS ltc_deserialize_z_transfo DEFINITION
 
 ENDCLASS.
 
+CLASS ltc_json_to_types DEFINITION
+      FOR TESTING
+      DURATION SHORT
+      RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+
+    DATA lx TYPE REF TO cx_root.
+
+    METHODS array_num FOR TESTING.
+    METHODS array_object FOR TESTING.
+    METHODS json_to_types FOR TESTING.
+
+ENDCLASS.
+
+
+
+
 CLASS ltc_deserialize_id IMPLEMENTATION.
-  METHOD not_asjson_xsdany.
-    json_not_asjson = `{"ROOT":[{"xml":"AA","CONNID":"0017"," very long name very long name very long name ":null}]}`.
+
+  METHOD json_xsdany.
+
+    json_not_asjson = `{"ROOT":[{"CONNID":"0017","null":null,"emptystring":"","xml":null," spaces ":null,"/":null,"very_long_name_very_long_name_very_long_name":null}]}`.
     TRY.
         CALL TRANSFORMATION id SOURCE XML json_not_asjson RESULT root = xsdany.
       CATCH cx_root INTO lx.
@@ -151,17 +163,40 @@ CLASS ltc_deserialize_id IMPLEMENTATION.
     xml_not_json_xml = cl_abap_codepage=>convert_from( xsdany ).
     " see how invalid XML is generated !? (undocumented feature)
     cl_abap_unit_assert=>assert_equals( act = xml_not_json_xml
-        exp = `<array><object><xml>AA</xml><CONNID>0017</CONNID>< very long name very long name very long name /></object></array>` ).
+        exp = `<array><object><CONNID>0017</CONNID><null/><emptystring></emptystring><xml/>< spaces /><//><very_long_name_very_long_name_very_long_name/></object></array>` ).
+
   ENDMETHOD.
+
+
+  METHOD json_xsdany_empty_member_key.
+
+    json_not_asjson = `{"ROOT":{"before":null,"":null,"after":null}]}`.
+    TRY.
+        CALL TRANSFORMATION id SOURCE XML json_not_asjson RESULT root = xsdany.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    xml_not_json_xml = cl_abap_codepage=>convert_from( xsdany ).
+    " see how invalid XML is generated !? (undocumented feature)
+    cl_abap_unit_assert=>assert_equals( act = xml_not_json_xml
+        exp = `<object><before/>` ).
+
+  ENDMETHOD.
+
+
   METHOD not_asjson_jsonxml.
+
     json_not_asjson = `{"ROOT":[{"carrid":"AA","CONNID":"0017"}]}`.
     TRY.
         CALL TRANSFORMATION id SOURCE XML json_not_asjson RESULT XML json_xml OPTIONS xml_header = 'no'.
       CATCH cx_root INTO lx.
     ENDTRY.
     cl_abap_unit_assert=>assert_equals( act = json_xml exp = `﻿<object><array name="ROOT"><object><str name="carrid">AA</str><str name="CONNID">0017</str></object></array></object>` ).
+
   ENDMETHOD.
+
+
   METHOD asjson_to_simple.
+
     DATA carrid TYPE sflight-carrid.
     asjson = `{"ROOT":"AA"}`.
     TRY.
@@ -169,8 +204,12 @@ CLASS ltc_deserialize_id IMPLEMENTATION.
       CATCH cx_root INTO lx.
     ENDTRY.
     cl_abap_unit_assert=>assert_equals( act = carrid exp = 'AA' ).
+
   ENDMETHOD.
+
+
   METHOD asjson_to_structur.
+
     DATA flight TYPE sflight.
     asjson = `{"ROOT":{"CARRID":"AA","CONNID":"0017"}}`.
     TRY.
@@ -178,19 +217,27 @@ CLASS ltc_deserialize_id IMPLEMENTATION.
       CATCH cx_root INTO lx.
     ENDTRY.
     cl_abap_unit_assert=>assert_equals( act = flight exp = VALUE sflight( carrid = 'AA' connid = '0017' ) ).
+
   ENDMETHOD.
+
+
   METHOD asjson_to_itab.
+
     asjson = `{"ROOT":[{"CARRID":"AA","CONNID":"0017"}]}`.
     TRY.
         CALL TRANSFORMATION id SOURCE XML asjson RESULT root = flights.
       CATCH cx_root INTO lx.
     ENDTRY.
     cl_abap_unit_assert=>assert_equals( act = flights exp = VALUE ty_flights( ( carrid = 'AA' connid = '0017' ) ) ).
+
   ENDMETHOD.
+
 ENDCLASS.
 
 CLASS ltc_deserialize_z_transfo IMPLEMENTATION.
+
   METHOD json_to_itab.
+
     CLEAR flights.
     DATA(json) = `[{"carrid":"AA","CONNID":"0017"}]`.
     lcl_r3tr_xtra=>create_update_r3tr_xtra_object(
@@ -216,5 +263,194 @@ CLASS ltc_deserialize_z_transfo IMPLEMENTATION.
       CATCH cx_root INTO lx.
     ENDTRY.
     cl_abap_unit_assert=>assert_equals( act = flights exp = VALUE ty_flights( ( carrid = 'AA' connid = '0017' ) ) ).
+
   ENDMETHOD.
+
+ENDCLASS.
+
+CLASS ltc_json_to_types IMPLEMENTATION.
+
+  METHOD array_num.
+    DATA(json) = `[1,2]`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_main TYPE decfloat34.` )
+        ( `TYPES tt_main TYPE STANDARD TABLE OF ty_main WITH EMPTY KEY.` )
+        ( `DATA main_json TYPE tt_main.` ) ) ).
+
+  ENDMETHOD.
+
+  METHOD array_object.
+    DATA(json) = `[{"a":1}]`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES BEGIN OF ty_main.` )
+        ( `TYPES ty_a TYPE decfloat34.` )
+        ( `TYPES END OF ty_main.` )
+        ( `TYPES tt_main TYPE STANDARD TABLE OF ty_main WITH EMPTY KEY.` )
+        ( `DATA main_json TYPE tt_main.` ) ) ).
+
+  ENDMETHOD.
+
+  METHOD json_to_types.
+    DATA(json) = `{` && |\r\n|  &&
+                 `    "id": "xxxxxxxxxxxxxxxxxxxxxxxxx",` && |\r\n|  &&
+                 `    "name": "xxxxxxxxxx",` && |\r\n|  &&
+                 `    "description": null,` && |\r\n|  &&
+                 `    "imagePullSecret": {` && |\r\n|  &&
+                 `        "name": "sap"` && |\r\n|  &&
+                 `    },` && |\r\n|  &&
+                 `    "requests": {` && |\r\n|  &&
+                 `        "cpu": null,` && |\r\n|  &&
+                 `        "memory": null,` && |\r\n|  &&
+                 `        "abapSystems": 3,` && |\r\n|  &&
+                 `        "abapSystemBackups": null` && |\r\n|  &&
+                 `    },` && |\r\n|  &&
+                 `    "status": {` && |\r\n|  &&
+                 `        "conditions": [` && |\r\n|  &&
+                 `            {` && |\r\n|  &&
+                 `                "ansibleResult": {` && |\r\n|  &&
+                 `                    "changed": 0.0,` && |\r\n|  &&
+                 `                    "completion": "date",` && |\r\n|  &&
+                 `                    "failures": 0.0,` && |\r\n|  &&
+                 `                    "ok": 8.0,` && |\r\n|  &&
+                 `                    "skipped": 1.0` && |\r\n|  &&
+                 `                },` && |\r\n|  &&
+                 `                "lastTransitionTime": "date",` && |\r\n|  &&
+                 `                "message": "Awaiting next reconciliation",` && |\r\n|  &&
+                 `                "reason": "Successful",` && |\r\n|  &&
+                 `                "status": "True",` && |\r\n|  &&
+                 `                "type": "Running"` && |\r\n|  &&
+                 `            }` && |\r\n|  &&
+                 `        ],` && |\r\n|  &&
+                 `        "resourceQuota": {` && |\r\n|  &&
+                 `            "hard": {` && |\r\n|  &&
+                 `                "count/abapsystems.abapops.sap": "3",` && |\r\n|  &&
+                 `                "cpu": "3",` && |\r\n|  &&
+                 `                "memory": "360Gi"` && |\r\n|  &&
+                 `            },` && |\r\n|  &&
+                 `            "used": {` && |\r\n|  &&
+                 `                "count/abapsystems.abapops.sap": "0",` && |\r\n|  &&
+                 `                "cpu": "0",` && |\r\n|  &&
+                 `                "memory": "0"` && |\r\n|  &&
+                 `            }` && |\r\n|  &&
+                 `        },` && |\r\n|  &&
+                 `        "resoureQuota": {` && |\r\n|  &&
+                 `            "hard": {` && |\r\n|  &&
+                 `                "count/abapsystems.abapops.sap": "3",` && |\r\n|  &&
+                 `                "cpu": "3",` && |\r\n|  &&
+                 `                "memory": "360Gi"` && |\r\n|  &&
+                 `            },` && |\r\n|  &&
+                 `            "used": {` && |\r\n|  &&
+                 `                "count/abapsystems.abapops.sap": "0",` && |\r\n|  &&
+                 `                "cpu": "0",` && |\r\n|  &&
+                 `                "memory": "0"` && |\r\n|  &&
+                 `            }}}}`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+
+*    TYPES: BEGIN OF ty_main_json,
+*      ty_id TYPE string,
+*     " JSON: "id":"xxxxxxxxxxxxxxxxxxxxxxxxx"
+*      ty_name TYPE string,
+*     " JSON: "name":"xxxxxxxxxx"
+*      ty_description TYPE string,
+*     "null
+*      BEGIN OF ty_imagepullsecret,
+*      ty_name TYPE string,
+*     " JSON: "name":"sap"
+*    	  END OF ty_imagepullsecret,
+*
+*    	  BEGIN OF ty_requests,
+*
+*    	  ty_cpu TYPE string,
+*     "null
+*    	  ty_memory TYPE string,
+*     "null
+*    	  ty_abapsystems TYPE i,
+*
+*    	  ty_abapsystembackups TYPE string,
+*     "null
+*    	  END OF ty_requests,
+*
+*    	  BEGIN OF ty_status,
+*
+*    	  BEGIN OF ty_main_json,
+*
+*    	  BEGIN OF ty_ansibleresult,
+*
+*    	  ty_changed TYPE i,
+*
+*    	  ty_completion TYPE string,
+*     " JSON: "completion":"date"
+*    	  ty_failures TYPE i,
+*
+*    	  ty_ok TYPE i,
+*
+*    	  ty_skipped TYPE i,
+*
+*    	  END OF ty_ansibleresult,
+*
+*    	  ty_lasttransitiontime TYPE string,
+*     " JSON: "lastTransitionTime":"date"
+*    	  ty_message TYPE string,
+*     " JSON: "message":"Awaiting next reconciliation"
+*    	  ty_reason TYPE string,
+*     " JSON: "reason":"Successful"
+*    	  ty_status TYPE string,
+*     " JSON: "status":"True"
+*    	  ty_type TYPE string,
+*     " JSON: "type":"Running"
+*    	  END OF ty_main_json,
+*
+*    	  tt_conditions TYPE STANDARD TABLE OF ty_conditions,
+*
+*    	  BEGIN OF ty_resourcequota,
+*
+*    	  BEGIN OF ty_hard,
+*
+*    	  ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"3"
+*    TYPES ty_cpu TYPE string. " JSON: "cpu":"3"
+*    TYPES ty_memory TYPE string. " JSON: "memory":"360Gi"
+*    TYPES END OF ty_hard.
+*    TYPES BEGIN OF ty_used.
+*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"0"
+*    TYPES ty_cpu TYPE string. " JSON: "cpu":"0"
+*    TYPES ty_memory TYPE string. " JSON: "memory":"0"
+*    TYPES END OF ty_used.
+*    TYPES END OF ty_resourcequota.
+*    TYPES BEGIN OF ty_resourequota.
+*    TYPES BEGIN OF ty_hard.
+*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"3"
+*    TYPES ty_cpu TYPE string. " JSON: "cpu":"3"
+*    TYPES ty_memory TYPE string. " JSON: "memory":"360Gi"
+*    TYPES END OF ty_hard.
+*    TYPES BEGIN OF ty_used.
+*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"0"
+*    TYPES ty_cpu TYPE string. " JSON: "cpu":"0"
+*    TYPES ty_memory TYPE string. " JSON: "memory":"0"
+*    TYPES END OF ty_used.
+*    TYPES END OF ty_resourequota.
+*    TYPES END OF ty_status.
+*    TYPES END OF ty_main_json.
+*    DATA main_json TYPE ty_main_json.
+
+  ENDMETHOD.
+
 ENDCLASS.
