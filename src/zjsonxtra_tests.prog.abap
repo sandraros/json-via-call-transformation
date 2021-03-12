@@ -142,8 +142,13 @@ CLASS ltc_json_to_types DEFINITION
 
     DATA lx TYPE REF TO cx_root.
 
+    METHODS num FOR TESTING.
+    METHODS str FOR TESTING.
+    METHODS bool FOR TESTING.
+    METHODS null FOR TESTING.
     METHODS array_num FOR TESTING.
     METHODS array_object FOR TESTING.
+    METHODS object_array FOR TESTING.
     METHODS json_to_types FOR TESTING.
 
 ENDCLASS.
@@ -270,11 +275,72 @@ ENDCLASS.
 
 CLASS ltc_json_to_types IMPLEMENTATION.
 
+  METHOD num.
+    DATA(json) = `1`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<num>1</num>` ) ).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_main TYPE decfloat34.` )
+        ( `DATA main_json TYPE ty_main.` ) ) ).
+  ENDMETHOD.
+
+  METHOD str.
+    DATA(json) = `"a"`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<str>a</str>` ) ).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_main TYPE string.` )
+        ( `DATA main_json TYPE ty_main.` ) ) ).
+  ENDMETHOD.
+
+  METHOD bool.
+    DATA(json) = `true`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<bool>true</bool>` ) ).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_main TYPE abap_bool.` )
+        ( `DATA main_json TYPE ty_main.` ) ) ).
+  ENDMETHOD.
+
+  METHOD null.
+    DATA(json) = `null`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<null/>` ) ).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_main TYPE string.` )
+        ( `DATA main_json TYPE ty_main.` ) ) ).
+  ENDMETHOD.
+
   METHOD array_num.
     DATA(json) = `[1,2]`.
     TRY.
         DATA(abap_source_code) = ``.
-        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml).
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<array><num>1</num><num>2</num></array>` ) ).
         CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
       CATCH cx_root INTO lx.
     ENDTRY.
@@ -283,25 +349,43 @@ CLASS ltc_json_to_types IMPLEMENTATION.
         ( `TYPES ty_main TYPE decfloat34.` )
         ( `TYPES tt_main TYPE STANDARD TABLE OF ty_main WITH EMPTY KEY.` )
         ( `DATA main_json TYPE tt_main.` ) ) ).
-
   ENDMETHOD.
 
   METHOD array_object.
     DATA(json) = `[{"a":1}]`.
     TRY.
         DATA(abap_source_code) = ``.
-        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml).
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<array><object><num name="a">1</num></object></array>` ) ).
         CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
       CATCH cx_root INTO lx.
     ENDTRY.
     SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
     cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
         ( `TYPES BEGIN OF ty_main.` )
-        ( `TYPES ty_a TYPE decfloat34.` )
+        ( `TYPES a TYPE decfloat34.` )
         ( `TYPES END OF ty_main.` )
         ( `TYPES tt_main TYPE STANDARD TABLE OF ty_main WITH EMPTY KEY.` )
         ( `DATA main_json TYPE tt_main.` ) ) ).
+  ENDMETHOD.
 
+  METHOD object_array.
+    DATA(json) = `{"a":[1]}`.
+    TRY.
+        DATA(abap_source_code) = ``.
+        CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+        cl_abap_unit_assert=>assert_equals( act = json_xml exp = cl_abap_codepage=>convert_to( `<object><array name="a"><num>1</num></array></object>` ) ).
+        CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
+      CATCH cx_root INTO lx.
+    ENDTRY.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    cl_abap_unit_assert=>assert_equals( act = abap_source_code_table exp = VALUE string_table(
+        ( `TYPES ty_a TYPE decfloat34.` )
+        ( `TYPES tt_a TYPE STANDARD TABLE OF ty_a WITH EMPTY KEY.` )
+        ( `TYPES BEGIN OF ty_main.` )
+        ( `TYPES a TYPE tt_a.` )
+        ( `TYPES END OF ty_main.` )
+        ( `DATA main_json TYPE ty_main.` ) ) ).
   ENDMETHOD.
 
   METHOD json_to_types.
@@ -364,92 +448,6 @@ CLASS ltc_json_to_types IMPLEMENTATION.
         CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json RESULT XML abap_source_code.
       CATCH cx_root INTO lx.
     ENDTRY.
-
-*    TYPES: BEGIN OF ty_main_json,
-*      ty_id TYPE string,
-*     " JSON: "id":"xxxxxxxxxxxxxxxxxxxxxxxxx"
-*      ty_name TYPE string,
-*     " JSON: "name":"xxxxxxxxxx"
-*      ty_description TYPE string,
-*     "null
-*      BEGIN OF ty_imagepullsecret,
-*      ty_name TYPE string,
-*     " JSON: "name":"sap"
-*    	  END OF ty_imagepullsecret,
-*
-*    	  BEGIN OF ty_requests,
-*
-*    	  ty_cpu TYPE string,
-*     "null
-*    	  ty_memory TYPE string,
-*     "null
-*    	  ty_abapsystems TYPE i,
-*
-*    	  ty_abapsystembackups TYPE string,
-*     "null
-*    	  END OF ty_requests,
-*
-*    	  BEGIN OF ty_status,
-*
-*    	  BEGIN OF ty_main_json,
-*
-*    	  BEGIN OF ty_ansibleresult,
-*
-*    	  ty_changed TYPE i,
-*
-*    	  ty_completion TYPE string,
-*     " JSON: "completion":"date"
-*    	  ty_failures TYPE i,
-*
-*    	  ty_ok TYPE i,
-*
-*    	  ty_skipped TYPE i,
-*
-*    	  END OF ty_ansibleresult,
-*
-*    	  ty_lasttransitiontime TYPE string,
-*     " JSON: "lastTransitionTime":"date"
-*    	  ty_message TYPE string,
-*     " JSON: "message":"Awaiting next reconciliation"
-*    	  ty_reason TYPE string,
-*     " JSON: "reason":"Successful"
-*    	  ty_status TYPE string,
-*     " JSON: "status":"True"
-*    	  ty_type TYPE string,
-*     " JSON: "type":"Running"
-*    	  END OF ty_main_json,
-*
-*    	  tt_conditions TYPE STANDARD TABLE OF ty_conditions,
-*
-*    	  BEGIN OF ty_resourcequota,
-*
-*    	  BEGIN OF ty_hard,
-*
-*    	  ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"3"
-*    TYPES ty_cpu TYPE string. " JSON: "cpu":"3"
-*    TYPES ty_memory TYPE string. " JSON: "memory":"360Gi"
-*    TYPES END OF ty_hard.
-*    TYPES BEGIN OF ty_used.
-*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"0"
-*    TYPES ty_cpu TYPE string. " JSON: "cpu":"0"
-*    TYPES ty_memory TYPE string. " JSON: "memory":"0"
-*    TYPES END OF ty_used.
-*    TYPES END OF ty_resourcequota.
-*    TYPES BEGIN OF ty_resourequota.
-*    TYPES BEGIN OF ty_hard.
-*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"3"
-*    TYPES ty_cpu TYPE string. " JSON: "cpu":"3"
-*    TYPES ty_memory TYPE string. " JSON: "memory":"360Gi"
-*    TYPES END OF ty_hard.
-*    TYPES BEGIN OF ty_used.
-*    TYPES ty_countabapsystems TYPE string. " JSON: "count/abapsystems.abapops.sap":"0"
-*    TYPES ty_cpu TYPE string. " JSON: "cpu":"0"
-*    TYPES ty_memory TYPE string. " JSON: "memory":"0"
-*    TYPES END OF ty_used.
-*    TYPES END OF ty_resourequota.
-*    TYPES END OF ty_status.
-*    TYPES END OF ty_main_json.
-*    DATA main_json TYPE ty_main_json.
 
   ENDMETHOD.
 
