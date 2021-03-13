@@ -1,0 +1,28 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+
+  <xsl:output indent="no" method="text"/>
+  <xsl:strip-spaces elements="*"/>
+
+  <xsl:template match="/">
+
+    <xsl:variable name="content">
+      <xsl:apply-templates select="*"/>
+    </xsl:variable>
+
+    <xsl:for-each select="$content/subTypes">
+      <xsl:value-of select="."/>
+    </xsl:for-each>
+
+  </xsl:template>
+
+
+  <xsl:template match="a">
+
+    <subTypes>A</subTypes>
+    <subTypes>B</subTypes>
+    <mainType>C</mainType>
+
+  </xsl:template>
+
+
+</xsl:stylesheet>
