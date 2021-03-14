@@ -168,6 +168,42 @@ CLASS ltc_json_to_types DEFINITION
 
 ENDCLASS.
 
+CLASS ltc_json_to_st DEFINITION
+      FOR TESTING
+      DURATION SHORT
+      RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+
+    DATA lx TYPE REF TO cx_root.
+
+    METHODS num FOR TESTING.
+    METHODS str FOR TESTING.
+    METHODS bool FOR TESTING.
+    METHODS null FOR TESTING.
+    METHODS array_num FOR TESTING.
+    METHODS object_num FOR TESTING.
+    METHODS array_object FOR TESTING.
+    METHODS object_array FOR TESTING.
+    METHODS array_array FOR TESTING.
+    METHODS object_object FOR TESTING.
+    METHODS empty_array FOR TESTING.
+    METHODS empty_object FOR TESTING.
+    METHODS object_object_array FOR TESTING.
+
+    TYPES: BEGIN OF ty_jsonxtra_to_st,
+             json_xml TYPE string,
+             st       TYPE string_table,
+           END OF ty_jsonxtra_to_st.
+
+    METHODS zjsonxtra_json_to_st
+      IMPORTING
+        json            TYPE string
+      RETURNING
+        VALUE(r_result) TYPE ty_jsonxtra_to_st.
+
+ENDCLASS.
+
 
 
 
@@ -260,6 +296,7 @@ CLASS ltc_deserialize_z_transfo IMPLEMENTATION.
 
     CLEAR flights.
     DATA(json) = `[{"carrid":"AA","CONNID":"0017"}]`.
+    "<array><object><str name="carrid">AA</str><str name="CONNID">0017</str></object></array>
     lcl_r3tr_xtra=>create_update_r3tr_xtra_object(
       EXPORTING
         i_xsltname    = 'ZJSONXTRA_TEST'
@@ -463,23 +500,201 @@ CLASS ltc_json_to_types IMPLEMENTATION.
 
 ENDCLASS.
 
-CLASS ltc_xslt DEFINITION
+CLASS ltc_json_to_st IMPLEMENTATION.
+
+  METHOD num.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `1` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<num>1</num>`
+            st = VALUE #(
+                ( `<num tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD str.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `"a"` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<str>a</str>`
+            st = VALUE #(
+                ( `<str tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD bool.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `true` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<bool>true</bool>`
+            st = VALUE #(
+                ( `<bool tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD null.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `null` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<null/>`
+            st = VALUE #(
+                ( `<null tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD array_num.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `[1,2]` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<array><num>1</num><num>2</num></array>`
+            st = VALUE #(
+                ( `<array><tt:loop ref=".ABAPROOT"><num/></tt:loop></array>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD object_num.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `{"a":1}` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<object><num name="a">1</num></object>`
+            st = VALUE #(
+                ( `<object ref=".ABAPROOT"><num name="a" tt:value-ref="a"/></object>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD array_object.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `[{"a":1}]` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<array><object><num name="a">1</num></object></array>`
+            st = VALUE #(
+                ( `<array><tt:loop ref=".ABAPROOT"><object><num name="a" tt:value-ref="a"/></object></tt:loop></array>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD object_array.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `{"a":[1]}` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<object><array name="a"><num>1</num></array></object>`
+            st = VALUE #(
+                ( `<object ref=".ABAPROOT"><array><tt:loop ref="a"><num/></tt:loop></array></object>` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD array_array.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `[[1]]` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<array><array><num>1</num></array></array>`
+            st = VALUE #(
+                ( `` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD object_object.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `{"a":{"b":1}}` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<object><object name="a"><num name="b">1</num></object></object>`
+            st = VALUE #(
+                ( `` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD empty_object.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `{}` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<object/>`
+            st = VALUE #(
+                ( `` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD empty_array.
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `[]` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<array/>`
+            st = VALUE #(
+                ( `` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD object_object_array.
+
+    cl_abap_unit_assert=>assert_equals(
+        act = zjsonxtra_json_to_st(
+            `{"a":{"b":[1]}}` )
+        exp = VALUE ty_jsonxtra_to_st(
+            json_xml =
+                `<object><object name="a"><array name="b"><num>1</num></array></object></object>`
+            st = VALUE #(
+                ( `` ) ) ) ).
+  ENDMETHOD.
+
+  METHOD zjsonxtra_json_to_st.
+    DATA(st_source_code) = ``.
+    CALL TRANSFORMATION id SOURCE XML json RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+    r_result-json_xml = cl_abap_codepage=>convert_from( json_xml ).
+
+    CALL TRANSFORMATION zjsonxtra_json_to_st SOURCE XML json RESULT XML st_source_code.
+
+    DATA(xpp2) = NEW cl_xslt_processor( ).
+    xpp2->set_source_string( st_source_code ).
+    DATA(result) = ``.
+    xpp2->set_expression( expression = '//tt:transform/tt:template/*' nsdeclarations = 'tt http://www.sap.com/transformation-templates' ).
+
+    xpp2->run( ' ' ).
+
+    DATA(nodes) = xpp2->get_nodes( ).
+    DATA(ixml) = cl_ixml=>create( ).
+    DATA(string) = ``.
+    DATA(stream_factory) = ixml->create_stream_factory( ).
+    DATA(ostream) = stream_factory->create_ostream_cstring( string = string ).
+    DO nodes->get_length( ) TIMES.
+      DATA(i) = sy-index.
+      DATA(node) = nodes->get_item( i - 1 ).
+      string = ``.
+      node->render( ostream = ostream recursive = 'X' ).
+      APPEND string TO r_result-st.
+    ENDDO.
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS ltc_temporary DEFINITION
       FOR TESTING
       DURATION SHORT
       RISK LEVEL HARMLESS.
   PRIVATE SECTION.
-    METHODS test." FOR TESTING.
+    METHODS test2 FOR TESTING.
 ENDCLASS.
 
-CLASS ltc_xslt IMPLEMENTATION.
-
-  METHOD test.
-
+CLASS ltc_temporary IMPLEMENTATION.
+  METHOD test2.
+    TYPES:
+      BEGIN OF ty1,
+        a TYPE decfloat34,
+      END OF ty1.
+    DATA json TYPE STANDARD TABLE OF ty1 WITH EMPTY KEY.
     TRY.
-        CALL TRANSFORMATION zjsonxtra_test2 SOURCE XML `<a/>` RESULT XML DATA(xml).
+
+        CALL TRANSFORMATION zjsonxtra_test2 SOURCE XML `[{"a":1}]` RESULT abaproot = json.
       CATCH cx_root INTO DATA(lx).
     ENDTRY.
-
   ENDMETHOD.
-
 ENDCLASS.

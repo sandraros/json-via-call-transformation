@@ -1,0 +1,106 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:tt="http://www.sap.com/transformation-templates" version="1.0">
+
+  <xsl:output indent="no" method="xml"/>
+  <xsl:strip-spaces elements="*"/>
+
+  <xsl:variable name="smallcase" select="'abcdefghijklmnopqrstuvwxyz'"/>
+  <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+
+
+  <xsl:template match="/">
+
+    <?sap.transform simple?>
+    <tt:transform>
+      <tt:root name="ABAPROOT"/>
+      <tt:template>
+
+        <xsl:apply-templates select="*"/>
+
+      </tt:template>
+    </tt:transform>
+
+  </xsl:template>
+
+
+  <xsl:template match="array">
+    <array>
+      <tt:loop>
+        <xsl:choose>
+          <xsl:when test="not(parent::*)">
+            <xsl:attribute name="ref">.ABAPROOT</xsl:attribute>
+          </xsl:when>
+          <xsl:when test="name(..)='object'">
+            <xsl:attribute name="ref">
+              <xsl:value-of select="@name"/>
+            </xsl:attribute>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:apply-templates select="*[1]"/>
+      </tt:loop>
+    </array>
+  </xsl:template>
+
+
+  <xsl:template match="object">
+    <object>
+      <xsl:choose>
+        <xsl:when test="not(parent::*)">
+          <xsl:attribute name="ref">.ABAPROOT</xsl:attribute>
+        </xsl:when>
+        <xsl:when test="name(..)='object'">
+          <xsl:attribute name="ref">
+            <xsl:value-of select="@name"/>
+          </xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:apply-templates select="*"/>
+    </object>
+  </xsl:template>
+
+
+  <xsl:template match="num">
+    <num>
+      <xsl:call-template name="simple-attributes"/>
+    </num>
+  </xsl:template>
+
+
+  <xsl:template match="str">
+    <str>
+      <xsl:call-template name="simple-attributes"/>
+    </str>
+  </xsl:template>
+
+
+  <xsl:template match="bool">
+    <bool>
+      <xsl:call-template name="simple-attributes"/>
+    </bool>
+  </xsl:template>
+
+
+  <xsl:template match="null">
+    <null>
+      <xsl:call-template name="simple-attributes"/>
+    </null>
+  </xsl:template>
+
+
+  <xsl:template name="simple-attributes">
+    <xsl:choose>
+      <xsl:when test="not(parent::*)">
+        <xsl:attribute name="tt:value-ref">.ABAPROOT</xsl:attribute>
+      </xsl:when>
+      <xsl:when test="name(..)='object'">
+        <xsl:attribute name="tt:value-ref">
+          <xsl:value-of select="@name"/>
+        </xsl:attribute>
+        <xsl:attribute name="name">
+          <xsl:value-of select="@name"/>
+        </xsl:attribute>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:template>
+
+
+</xsl:stylesheet>

@@ -41,28 +41,10 @@
 
   <xsl:template match="array">
 
-    <!--<xsl:variable name="name">
-      <xsl:call-template name="NAME">
-        <xsl:with-param name="NAME" select="@name"/>
-      </xsl:call-template>
-    </xsl:variable>-->
-    <xsl:variable name="name">
-      <xsl:choose>
-        <xsl:when test="name(..)='array' or not(parent::*)">
-          <xsl:text>ty_</xsl:text>
-          <xsl:value-of select="generate-id(.)"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="@name"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-
     <xsl:variable name="content">
       <xsl:apply-templates select="*[1]"/>
     </xsl:variable>
 
-    <xsl:copy-of select="$content/subTypes"/>
     <xsl:variable name="subtypename">
       <xsl:choose>
         <xsl:when test="name(*[1])='array' or name(*[1])='object'">
@@ -74,38 +56,24 @@
           <xsl:text>string</xsl:text>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:for-each select="$content/mainType">
-            <xsl:value-of select="."/>
-          </xsl:for-each>
+          <xsl:value-of select="$content/mainType"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
 
-    <xsl:variable name="mainType">
+    <mainType>
       <xsl:text>STANDARD TABLE OF </xsl:text>
       <xsl:value-of select="$subtypename"/>
       <xsl:text> WITH EMPTY KEY</xsl:text>
-    </xsl:variable>
-
-    <xsl:choose>
-      <xsl:when test="substring($subtypename,1,3)='ty_'">
-        <mainType>
-          <xsl:value-of select="$mainType"/>
-        </mainType>
-        <xsl:for-each select="$content/mainType">
-          <subTypes>
-            <xsl:value-of select="."/>
-          </subTypes>
-        </xsl:for-each>
-      </xsl:when>
-      <xsl:otherwise>
-        <mainType>
-          <xsl:value-of select="$name"/>
-          <xsl:text> TYPE </xsl:text>
-          <xsl:value-of select="$mainType"/>
-        </mainType>
-      </xsl:otherwise>
-    </xsl:choose>
+    </mainType>
+    <xsl:copy-of select="$content/subTypes"/>
+    <xsl:if test="name(*[1])='array'">
+      <subTypes>
+        <xsl:value-of select="$subtypename"/>
+        <xsl:text> TYPE </xsl:text>
+        <xsl:value-of select="$content/mainType"/>
+      </subTypes>
+    </xsl:if>
 
   </xsl:template>
 
@@ -160,7 +128,7 @@
           <xsl:text>string</xsl:text>
         </mainType>
       </xsl:when>
-      <xsl:when test="substring($name,1,3)='ty_'">
+      <xsl:when test="name(..)='array' or not(parent::*)">
         <xsl:copy-of select="$content2/subTypes"/>
         <xsl:for-each select="$content2/mainType">
           <subTypes>
@@ -196,20 +164,6 @@
 
   <xsl:template match="null">
     <mainType>string</mainType>
-  </xsl:template>
-
-
-  <xsl:template name="NAME">
-    <xsl:param name="NAME"/>
-    <xsl:choose>
-      <xsl:when test="string($NAME)!=''">
-        <xsl:value-of select="$NAME"/>
-      </xsl:when>
-      <xsl:when test="string($NAME/../@name)!=''">
-        <xsl:value-of select="$NAME/../@name"/>
-      </xsl:when>
-      <xsl:otherwise>main</xsl:otherwise>
-    </xsl:choose>
   </xsl:template>
 
 
