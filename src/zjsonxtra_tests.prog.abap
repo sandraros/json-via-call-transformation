@@ -5,6 +5,9 @@
 *&---------------------------------------------------------------------*
 REPORT zjsonxtra_tests.
 
+CLASS lcx_r3tr_xtra DEFINITION INHERITING FROM cx_static_check.
+ENDCLASS.
+
 CLASS lcl_r3tr_xtra DEFINITION.
   PUBLIC SECTION.
 
@@ -14,7 +17,9 @@ CLASS lcl_r3tr_xtra DEFINITION.
     CLASS-METHODS create_update_r3tr_xtra_object
       IMPORTING
         i_xsltname           TYPE clike
-        VALUE(i_xslt_source) TYPE string.
+        VALUE(i_xslt_source) TYPE string
+      RAISING
+        lcx_r3tr_xtra.
 
 ENDCLASS.
 
@@ -34,6 +39,9 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           p_obj       = lo_xslt
         EXCEPTIONS
           OTHERS      = 1 ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+      ENDIF.
       lo_xslt->set_changeable(
         EXPORTING
           p_changeable                   = 'X'
@@ -48,6 +56,9 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           object_modified                = 8
           permission_failure             = 9
           OTHERS                         = 10 ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+      ENDIF.
       cl_o2_api_xsltdesc=>prepare_source_table(
         IMPORTING
           e_source_table = lt_source
@@ -58,6 +69,9 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           p_source = lt_source
         EXCEPTIONS
           OTHERS   = 1 ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+      ENDIF.
     ELSE.
       cl_o2_api_xsltdesc=>create_new_from_string(
         EXPORTING
@@ -67,6 +81,9 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           p_obj    = lo_xslt
         EXCEPTIONS
           OTHERS   = 1 ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+      ENDIF.
     ENDIF.
     lo_xslt->save(
       EXPORTING
@@ -74,12 +91,21 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
         i_suppress_corr_insert = 'X'
       EXCEPTIONS
         OTHERS                 = 1 ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+    ENDIF.
     lo_xslt->activate(
       EXCEPTIONS
         OTHERS = 1 ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+    ENDIF.
     lo_xslt->generate(
       EXCEPTIONS
         OTHERS = 1 ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_r3tr_xtra.
+    ENDIF.
 
   ENDMETHOD.
 
@@ -129,7 +155,9 @@ CLASS ltc_deserialize_z_transfo DEFINITION
            ty_flights TYPE STANDARD TABLE OF ty_flight WITH EMPTY KEY.
     DATA flights TYPE ty_flights.
 
-    METHODS json_to_itab FOR TESTING.
+    METHODS json_to_itab FOR TESTING
+      RAISING
+        lcx_r3tr_xtra.
 
 ENDCLASS.
 
@@ -298,7 +326,6 @@ CLASS ltc_deserialize_z_transfo IMPLEMENTATION.
     DATA(json) = `[{"carrid":"AA","CONNID":"0017"}]`.
     "<array><object><str name="carrid">AA</str><str name="CONNID">0017</str></object></array>
     lcl_r3tr_xtra=>create_update_r3tr_xtra_object(
-      EXPORTING
         i_xsltname    = 'ZJSONXTRA_TEST'
         i_xslt_source = |<?sap.transform simple?>\n| &
                         |<tt:transform xmlns:tt="http://www.sap.com/transformation-templates" xmlns:ddic="http://www.sap.com/abapxml/types/dictionary">\n| &
@@ -554,7 +581,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array><num>1</num><num>2</num></array>`
             st = VALUE #(
-                ( `<array><tt:loop ref=".ABAPROOT"><num/></tt:loop></array>` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"><num tt:value-ref="$ref"/></tt:loop></array>` ) ) ) ).
   ENDMETHOD.
 
   METHOD object_num.
@@ -587,7 +614,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><array name="a"><num>1</num></array></object>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"><array><tt:loop ref="a"><num/></tt:loop></array></object>` ) ) ) ).
+                ( `<object ref=".ABAPROOT"><array><tt:loop ref="a"><num tt:value-ref="$ref"/></tt:loop></array></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD array_array.
@@ -598,7 +625,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array><array><num>1</num></array></array>`
             st = VALUE #(
-                ( `` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"><array><tt:loop><num tt:value-ref="$ref"/></tt:loop></array></tt:loop></array>` ) ) ) ).
   ENDMETHOD.
 
   METHOD object_object.
@@ -609,7 +636,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><object name="a"><num name="b">1</num></object></object>`
             st = VALUE #(
-                ( `` ) ) ) ).
+                ( `<object ref=".ABAPROOT"><object ref="a"><num name="b" tt:value-ref="b"/></object></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD empty_object.
@@ -620,7 +647,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object/>`
             st = VALUE #(
-                ( `` ) ) ) ).
+                ( `<object ref=".ABAPROOT"/>` ) ) ) ).
   ENDMETHOD.
 
   METHOD empty_array.
@@ -631,7 +658,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array/>`
             st = VALUE #(
-                ( `` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"/></array>` ) ) ) ).
   ENDMETHOD.
 
   METHOD object_object_array.
@@ -643,7 +670,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><object name="a"><array name="b"><num>1</num></array></object></object>`
             st = VALUE #(
-                ( `` ) ) ) ).
+                ( `<object ref=".ABAPROOT"><object ref="a"><array><tt:loop ref="b"><num tt:value-ref="$ref"/></tt:loop></array></object></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD zjsonxtra_json_to_st.
@@ -687,14 +714,140 @@ ENDCLASS.
 CLASS ltc_temporary IMPLEMENTATION.
   METHOD test2.
     TYPES:
-      BEGIN OF ty1,
-        a TYPE decfloat34,
-      END OF ty1.
+      ty1 TYPE STANDARD TABLE OF decfloat34 WITH EMPTY KEY.
     DATA json TYPE STANDARD TABLE OF ty1 WITH EMPTY KEY.
     TRY.
-
-        CALL TRANSFORMATION zjsonxtra_test2 SOURCE XML `[{"a":1}]` RESULT abaproot = json.
+        CALL TRANSFORMATION zjsonxtra_test2 SOURCE XML `[[1]]` RESULT abaproot = json.
       CATCH cx_root INTO DATA(lx).
     ENDTRY.
   ENDMETHOD.
 ENDCLASS.
+
+CLASS lcx_ui DEFINITION INHERITING FROM cx_static_check.
+ENDCLASS.
+
+CLASS lcl_ui DEFINITION.
+  PUBLIC SECTION.
+    METHODS pbo.
+    METHODS pai
+      IMPORTING
+        ucomm TYPE sscrfields-ucomm.
+    METHODS run
+      RAISING
+        lcx_r3tr_xtra
+        lcx_ui.
+    METHODS exit.
+  PRIVATE SECTION.
+    DATA: textedit TYPE REF TO cl_gui_textedit,
+          json     TYPE REF TO string.
+ENDCLASS.
+
+CLASS lcl_ui IMPLEMENTATION.
+
+  METHOD pbo.
+    LOOP AT SCREEN.
+      screen-active = '0'.
+      MODIFY SCREEN.
+    ENDLOOP.
+    IF textedit IS NOT BOUND.
+      CREATE OBJECT textedit
+        EXPORTING
+          parent = cl_gui_container=>screen0.
+      DATA(global_json) = |({ sy-repid })JSON|.
+      ASSIGN (global_json) TO FIELD-SYMBOL(<json>).
+      textedit->set_textstream( <json> ).
+      json = REF #( <json> ).
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD pai.
+    textedit->get_textstream( IMPORTING text = DATA(json_get) ).
+    cl_gui_cfw=>flush( ).
+    json->* = json_get.
+    CASE ucomm.
+      WHEN 'SPOS'.
+        exit( ).
+    ENDCASE.
+  ENDMETHOD.
+
+  METHOD run.
+    DATA(st_source_code) = ``.
+    CALL TRANSFORMATION id SOURCE XML json->* RESULT XML DATA(json_xml) OPTIONS xml_header = 'no'.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_ui.
+    ENDIF.
+    CALL TRANSFORMATION zjsonxtra_json_to_st SOURCE XML json->* RESULT XML st_source_code OPTIONS xml_header = 'no'.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_ui.
+    ENDIF.
+    lcl_r3tr_xtra=>create_update_r3tr_xtra_object(
+        i_xsltname    = 'ZJSONXTRA_TEST'
+        i_xslt_source = st_source_code ).
+    COMMIT WORK AND WAIT.
+
+    DATA(abap_source_code) = ``.
+    CALL TRANSFORMATION zjsonxtra_json_to_types SOURCE XML json->* RESULT XML abap_source_code.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE lcx_ui.
+    ENDIF.
+    SPLIT abap_source_code AT |\r\n| INTO TABLE DATA(abap_source_code_table).
+    abap_source_code_table = VALUE #(
+        LET temp = abap_source_code_table IN
+        ( |PROGRAM.| )
+        ( |FORM main USING JSON2 TYPE STRING.| )
+        ( |BREAK-POINT.| )
+        ( LINES OF temp )
+        ( |CALL TRANSFORMATION ZJSONXTRA_TEST SOURCE XML JSON2 RESULT ABAPROOT = JSON.| )
+        ( |ENDFORM.| ) ).
+    GENERATE SUBROUTINE POOL abap_source_code_table NAME DATA(subr_pool_name).
+    IF subr_pool_name IS INITIAL.
+      RAISE EXCEPTION TYPE lcx_ui.
+      " generation/syntax error
+      RETURN.
+    ENDIF.
+    COMMIT WORK AND WAIT.
+
+    PERFORM main IN PROGRAM (subr_pool_name) USING json->*.
+
+  ENDMETHOD.
+
+  METHOD exit.
+    IF textedit IS BOUND.
+      textedit->free( ).
+      FREE textedit.
+    ENDIF.
+  ENDMETHOD.
+
+ENDCLASS.
+
+PARAMETERS json TYPE string.
+
+DATA ui TYPE REF TO lcl_ui.
+TABLES sscrfields.
+
+LOAD-OF-PROGRAM.
+  ui = NEW lcl_ui( ).
+
+AT SELECTION-SCREEN OUTPUT.
+  TRY.
+      ui->pbo( ).
+    CATCH cx_root INTO DATA(lx).
+      MESSAGE lx TYPE 'I' DISPLAY LIKE 'E'.
+  ENDTRY.
+
+AT SELECTION-SCREEN.
+  TRY.
+      ui->pai( sscrfields-ucomm ).
+    CATCH cx_root INTO DATA(lx).
+      MESSAGE lx TYPE 'E'.
+  ENDTRY.
+
+AT SELECTION-SCREEN ON EXIT-COMMAND.
+  ui->exit( ).
+
+START-OF-SELECTION.
+  TRY.
+      ui->run( ).
+    CATCH cx_root INTO DATA(lx).
+      MESSAGE lx TYPE 'I' DISPLAY LIKE 'E'.
+  ENDTRY.

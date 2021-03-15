@@ -9,7 +9,6 @@
 
   <xsl:template match="/">
 
-    <?sap.transform simple?>
     <tt:transform>
       <tt:root name="ABAPROOT"/>
       <tt:template>
@@ -45,10 +44,10 @@
     <object>
       <xsl:choose>
         <xsl:when test="not(parent::*)">
-          <xsl:attribute name="ref">.ABAPROOT</xsl:attribute>
+          <xsl:attribute name="tt:ref">.ABAPROOT</xsl:attribute>
         </xsl:when>
         <xsl:when test="name(..)='object'">
-          <xsl:attribute name="ref">
+          <xsl:attribute name="tt:ref">
             <xsl:value-of select="@name"/>
           </xsl:attribute>
         </xsl:when>
@@ -99,6 +98,11 @@
           <xsl:value-of select="@name"/>
         </xsl:attribute>
       </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="tt:value-ref">
+          <xsl:value-of select="'$ref'"/>
+        </xsl:attribute>
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 

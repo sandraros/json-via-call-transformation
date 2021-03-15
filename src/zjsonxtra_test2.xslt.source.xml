@@ -2,6 +2,6 @@
 <tt:transform xmlns:tt="http://www.sap.com/transformation-templates" xmlns:ddic="http://www.sap.com/abapxml/types/dictionary">
   <tt:root name="ABAPROOT"/>
   <tt:template>
-  <array><tt:loop ref=".ABAPROOT"><object><num name="a" tt:value-ref="a"/></object></tt:loop></array>
+  <array><tt:loop ref=".ABAPROOT"><array><tt:loop><num tt:value-ref="$ref"/></tt:loop></array></tt:loop></array>
   </tt:template>
 </tt:transform>
