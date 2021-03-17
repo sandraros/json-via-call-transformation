@@ -539,7 +539,8 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<num>1</num>`
             st = VALUE #(
-                ( `<num tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+                ( `<tt:cond><num tt:value-ref=".ABAPROOT"/></tt:cond>` )
+                ( `<tt:cond><null tt:value-ref=".ABAPROOT"/></tt:cond>` ) ) ) ).
   ENDMETHOD.
 
   METHOD str.
@@ -550,7 +551,8 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<str>a</str>`
             st = VALUE #(
-                ( `<str tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+                ( `<tt:cond><str tt:value-ref=".ABAPROOT"/></tt:cond>` )
+                ( `<tt:cond><null tt:value-ref=".ABAPROOT"/></tt:cond>` ) ) ) ).
   ENDMETHOD.
 
   METHOD bool.
@@ -561,7 +563,8 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<bool>true</bool>`
             st = VALUE #(
-                ( `<bool tt:value-ref=".ABAPROOT"/>` ) ) ) ).
+                ( `<tt:cond><bool tt:value-ref=".ABAPROOT"/></tt:cond>` )
+                ( `<tt:cond><null tt:value-ref=".ABAPROOT"/></tt:cond>` ) ) ) ).
   ENDMETHOD.
 
   METHOD null.
@@ -583,7 +586,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array><num>1</num><num>2</num></array>`
             st = VALUE #(
-                ( `<array><tt:loop ref=".ABAPROOT"><num tt:value-ref="$ref"/></tt:loop></array>` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"><tt:cond><num tt:value-ref="$ref"/></tt:cond><tt:cond><null tt:value-ref="$ref"/></tt:cond></tt:loop></array>` ) ) ) ).
   ENDMETHOD.
 
   METHOD object_num.
@@ -594,7 +597,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><num name="a">1</num></object>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"><num name="a" tt:value-ref="a"/></object>` ) ) ) ).
+                ( `<object tt:ref=".ABAPROOT"><tt:group><tt:cond frq="?"><num name="a" tt:value-ref="a"/></tt:cond><tt:cond frq="?"><null name="a" tt:value-ref="a"/></tt:cond></tt:group></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD array_object.
@@ -605,7 +608,8 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array><object><num name="a">1</num></object></array>`
             st = VALUE #(
-                ( `<array><tt:loop ref=".ABAPROOT"><object><num name="a" tt:value-ref="a"/></object></tt:loop></array>` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"><tt:cond><object><tt:group><tt:cond frq="?"><num name="a" tt:value-ref="a"/></tt:cond><tt:cond frq="?"><null name="a" tt:value-ref="a"/></tt:cond></tt:group></object></tt:cond></tt:loop></array>` ) ) ) )
+.
   ENDMETHOD.
 
   METHOD object_array.
@@ -616,7 +620,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><array name="a"><num>1</num></array></object>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"><array><tt:loop ref="a"><num tt:value-ref="$ref"/></tt:loop></array></object>` ) ) ) ).
+                ( `<object tt:ref=".ABAPROOT"><tt:group><tt:cond frq="?"><array><tt:loop ref="a"><tt:cond><num tt:value-ref="$ref"/></tt:cond><tt:cond><null tt:value-ref="$ref"/></tt:cond></tt:loop></array></tt:cond></tt:group></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD array_array.
@@ -627,7 +631,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<array><array><num>1</num></array></array>`
             st = VALUE #(
-                ( `<array><tt:loop ref=".ABAPROOT"><array><tt:loop><num tt:value-ref="$ref"/></tt:loop></array></tt:loop></array>` ) ) ) ).
+                ( `<array><tt:loop ref=".ABAPROOT"><tt:cond><array><tt:loop><tt:cond><num tt:value-ref="$ref"/></tt:cond><tt:cond><null tt:value-ref="$ref"/></tt:cond></tt:loop></array></tt:cond></tt:loop></array>` ) ) ) ).
   ENDMETHOD.
 
   METHOD object_object.
@@ -638,7 +642,9 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><object name="a"><num name="b">1</num></object></object>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"><object ref="a"><num name="b" tt:value-ref="b"/></object></object>` ) ) ) ).
+                (
+`<object tt:ref=".ABAPROOT"><tt:group><tt:cond frq="?"><object tt:ref="a"><tt:group><tt:cond frq="?"><num name="b" tt:value-ref="b"/></tt:cond><tt:cond frq="?"><null name="b" tt:value-ref="b"/></tt:cond></tt:group></object></tt:cond></tt:group></object>`
+) ) ) ).
   ENDMETHOD.
 
   METHOD empty_object.
@@ -649,7 +655,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object/>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"/>` ) ) ) ).
+                ( `<object tt:ref=".ABAPROOT"/>` ) ) ) ).
   ENDMETHOD.
 
   METHOD empty_array.
@@ -672,7 +678,8 @@ CLASS ltc_json_to_st IMPLEMENTATION.
             json_xml =
                 `<object><object name="a"><array name="b"><num>1</num></array></object></object>`
             st = VALUE #(
-                ( `<object ref=".ABAPROOT"><object ref="a"><array><tt:loop ref="b"><num tt:value-ref="$ref"/></tt:loop></array></object></object>` ) ) ) ).
+                ( `<object tt:ref=".ABAPROOT"><tt:group><tt:cond frq="?"><object tt:ref="a"><tt:group><tt:cond frq="?"><array><tt:loop ref="b"><tt:cond><num tt:value-ref="$ref"/></tt:cond><tt:cond><null tt:value-ref="$ref"/></tt:cond></tt:loop>` &&
+`</array></tt:cond></tt:group></object></tt:cond></tt:group></object>` ) ) ) ).
   ENDMETHOD.
 
   METHOD zjsonxtra_json_to_st.
@@ -681,6 +688,7 @@ CLASS ltc_json_to_st IMPLEMENTATION.
     r_result-json_xml = cl_abap_codepage=>convert_from( json_xml ).
 
     CALL TRANSFORMATION zjsonxtra_json_to_st SOURCE XML json RESULT XML st_source_code.
+    CALL TRANSFORMATION zjsonxtra_id_no_indent SOURCE XML st_source_code RESULT XML st_source_code.
 
     DATA(xpp2) = NEW cl_xslt_processor( ).
     xpp2->set_source_string( st_source_code ).
@@ -778,7 +786,7 @@ CLASS lcl_ui IMPLEMENTATION.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE lcx_ui.
     ENDIF.
-    CALL TRANSFORMATION zjsonxtra_json_to_st SOURCE XML json->* RESULT XML st_source_code OPTIONS xml_header = 'no'.
+    CALL TRANSFORMATION zjsonxtra_json_to_st SOURCE XML json->* RESULT XML st_source_code OPTIONS xml_header = 'no' PARAMETERS indent = 'yes'.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE lcx_ui.
     ENDIF.

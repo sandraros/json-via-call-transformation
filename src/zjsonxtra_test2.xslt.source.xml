@@ -1,7 +1,23 @@
 <?sap.transform simple?>
-<tt:transform xmlns:tt="http://www.sap.com/transformation-templates" xmlns:ddic="http://www.sap.com/abapxml/types/dictionary">
-  <tt:root name="ABAPROOT"/>
-  <tt:template>
-  <array><tt:loop ref=".ABAPROOT"><array><tt:loop><num tt:value-ref="$ref"/></tt:loop></array></tt:loop></array>
-  </tt:template>
+<tt:transform xmlns:tt="http://www.sap.com/transformation-templates">
+<tt:root name="ABAPROOT"/>
+<tt:template>
+<object tt:ref=".ABAPROOT">
+<tt:group>
+<tt:cond><str name="order_id" tt:value-ref="order_id"/></tt:cond>
+<tt:cond><null name="order_id" tt:value-ref="order_id"/></tt:cond>
+<tt:cond><array><tt:loop ref="items">
+<object>
+<tt:group>
+<tt:cond><str name="line" tt:value-ref="line"/></tt:cond>
+<tt:cond><null name="line" tt:value-ref="line"/></tt:cond>
+<tt:cond><str name="order_reason" tt:value-ref="order_reason"/></tt:cond>
+<tt:cond><null name="order_reason" tt:value-ref="order_reason"/></tt:cond>
+</tt:group>
+</object>
+</tt:loop>
+</array></tt:cond>
+</tt:group>
+</object>
+</tt:template>
 </tt:transform>

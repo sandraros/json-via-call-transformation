@@ -3,15 +3,38 @@
   <tt:root name="ABAPROOT"/>
   <tt:template>
     <object tt:ref=".ABAPROOT">
-      <str name="order_id" tt:value-ref="order_id"/>
-      <array>
-        <tt:loop ref="items">
-          <object>
-            <str name="line" tt:value-ref="line"/>
-            <str name="order_reason" tt:value-ref="order_reason"/>
-          </object>
-        </tt:loop>
-      </array>
+      <tt:group>
+        <tt:cond frq="?">
+          <str name="order_id" tt:value-ref="order_id"/>
+        </tt:cond>
+        <tt:cond frq="?">
+          <null name="order_id" tt:value-ref="order_id"/>
+        </tt:cond>
+        <tt:cond frq="?">
+          <array>
+            <tt:loop ref="items">
+              <tt:cond>
+                <object>
+                  <tt:group>
+                    <tt:cond frq="?">
+                      <str name="order_reason" tt:value-ref="order_reason"/>
+                    </tt:cond>
+                    <tt:cond frq="?">
+                      <null name="order_reason" tt:value-ref="order_reason"/>
+                    </tt:cond>
+                    <tt:cond frq="?">
+                      <str name="line" tt:value-ref="line"/>
+                    </tt:cond>
+                    <tt:cond frq="?">
+                      <null name="line" tt:value-ref="line"/>
+                    </tt:cond>
+                  </tt:group>
+                </object>
+              </tt:cond>
+            </tt:loop>
+          </array>
+        </tt:cond>
+      </tt:group>
     </object>
   </tt:template>
 </tt:transform>

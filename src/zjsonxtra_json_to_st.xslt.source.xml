@@ -26,59 +26,75 @@
 
 
   <xsl:template match="array">
-    <array>
-      <tt:loop>
-        <xsl:choose>
-          <xsl:when test="not(parent::*)">
-            <xsl:attribute name="ref">.ABAPROOT</xsl:attribute>
-          </xsl:when>
-          <xsl:when test="name(..)='object'">
-            <xsl:attribute name="ref">
-              <xsl:value-of select="@name"/>
-            </xsl:attribute>
-          </xsl:when>
-        </xsl:choose>
-        <xsl:apply-templates select="*[1]"/>
-      </tt:loop>
-    </array>
+    <xsl:call-template name="wrap-group-if-parent-is-object">
+      <xsl:with-param name="nodeset">
+        <array>
+          <tt:loop>
+            <xsl:choose>
+              <xsl:when test="not(parent::*)">
+                <xsl:attribute name="ref">.ABAPROOT</xsl:attribute>
+              </xsl:when>
+              <xsl:when test="name(..)='object'">
+                <xsl:attribute name="ref">
+                  <xsl:value-of select="@name"/>
+                </xsl:attribute>
+              </xsl:when>
+            </xsl:choose>
+            <xsl:apply-templates select="*[1]"/>
+          </tt:loop>
+        </array>
+      </xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
 
   <xsl:template match="object">
-    <object>
-      <xsl:choose>
-        <xsl:when test="not(parent::*)">
-          <xsl:attribute name="tt:ref">.ABAPROOT</xsl:attribute>
-        </xsl:when>
-        <xsl:when test="name(..)='object'">
-          <xsl:attribute name="tt:ref">
-            <xsl:value-of select="@name"/>
-          </xsl:attribute>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:apply-templates select="*"/>
-    </object>
+    <xsl:call-template name="wrap-group-if-parent-is-object">
+      <xsl:with-param name="nodeset">
+        <object>
+          <xsl:choose>
+            <xsl:when test="not(parent::*)">
+              <xsl:attribute name="tt:ref">.ABAPROOT</xsl:attribute>
+            </xsl:when>
+            <xsl:when test="name(..)='object'">
+              <xsl:attribute name="tt:ref">
+                <xsl:value-of select="@name"/>
+              </xsl:attribute>
+            </xsl:when>
+          </xsl:choose>
+          <xsl:variable name="inner_nodes">
+            <xsl:apply-templates select="*"/>
+          </xsl:variable>
+          <xsl:if test="$inner_nodes and count($inner_nodes[1]/*)!=0">
+            <!-- I had <tt:group/> and $inner_nodes true at the same time, so needed to add an extra obscure condition-->
+            <tt:group>
+              <xsl:copy-of select="$inner_nodes"/>
+            </tt:group>
+          </xsl:if>
+        </object>
+      </xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
 
   <xsl:template match="num">
-    <num>
-      <xsl:call-template name="simple-attributes"/>
-    </num>
+    <xsl:call-template name="simple-element">
+      <xsl:with-param name="elementName">num</xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
 
   <xsl:template match="str">
-    <str>
-      <xsl:call-template name="simple-attributes"/>
-    </str>
+    <xsl:call-template name="simple-element">
+      <xsl:with-param name="elementName">str</xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
 
   <xsl:template match="bool">
-    <bool>
-      <xsl:call-template name="simple-attributes"/>
-    </bool>
+    <xsl:call-template name="simple-element">
+      <xsl:with-param name="elementName">bool</xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
 
@@ -86,6 +102,46 @@
     <null>
       <xsl:call-template name="simple-attributes"/>
     </null>
+  </xsl:template>
+
+
+  <xsl:template name="wrap-group-if-parent-is-object">
+    <xsl:param name="nodeset"/>
+    <xsl:choose>
+      <xsl:when test="not(parent::*)">
+        <xsl:copy-of select="$nodeset"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <tt:cond>
+          <xsl:if test="name(..)='object'">
+            <xsl:attribute name="frq">?</xsl:attribute>
+          </xsl:if>
+          <xsl:copy-of select="$nodeset"/>
+        </tt:cond>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+
+  <xsl:template name="simple-element">
+    <xsl:param name="elementName"/>
+
+    <tt:cond>
+      <xsl:if test="name(..)='object'">
+        <xsl:attribute name="frq">?</xsl:attribute>
+      </xsl:if>
+      <xsl:element name="{$elementName}">
+        <xsl:call-template name="simple-attributes"/>
+      </xsl:element>
+    </tt:cond>
+    <tt:cond>
+      <xsl:if test="name(..)='object'">
+        <xsl:attribute name="frq">?</xsl:attribute>
+      </xsl:if>
+      <null>
+        <xsl:call-template name="simple-attributes"/>
+      </null>
+    </tt:cond>
   </xsl:template>
 
 
