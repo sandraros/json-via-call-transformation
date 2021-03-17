@@ -1,3 +1,17 @@
 <?sap.transform simple?>
-﻿<tt:transform xmlns:tt="http://www.sap.com/transformation-templates"><tt:root name="ABAPROOT"/><tt:template><object tt:ref=".ABAPROOT"><str name="ContractID" tt:value-ref="ContractID"/><str name="Supplier" tt:value-ref="Supplier"/><num name="Value"
-tt:value-ref="Value"/><str name="Curency" tt:value-ref="Curency"/><object tt:ref="StartDate"><str name="__type" tt:value-ref="__type"/><str name="iso" tt:value-ref="iso"/></object></object></tt:template></tt:transform>
+﻿<tt:transform xmlns:tt="http://www.sap.com/transformation-templates">
+  <tt:root name="ABAPROOT"/>
+  <tt:template>
+    <object tt:ref=".ABAPROOT">
+      <str name="order_id" tt:value-ref="order_id"/>
+      <array>
+        <tt:loop ref="items">
+          <object>
+            <str name="line" tt:value-ref="line"/>
+            <str name="order_reason" tt:value-ref="order_reason"/>
+          </object>
+        </tt:loop>
+      </array>
+    </object>
+  </tt:template>
+</tt:transform>

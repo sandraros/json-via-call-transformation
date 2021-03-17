@@ -1,16 +1,20 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:tt="http://www.sap.com/transformation-templates" version="1.0">
 
-  <xsl:output indent="no" method="xml"/>
+  <xsl:output indent="yes" method="xml"/>
   <xsl:strip-spaces elements="*"/>
+
 
   <xsl:variable name="smallcase" select="'abcdefghijklmnopqrstuvwxyz'"/>
   <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
 
+  <!-- DON'T USE PRETTY PRINTER WHICH REPLACES &#10; WITH \r\n, WHICH CAUSES SOURCE CODE -->
 
   <xsl:template match="/">
 
     <tt:transform>
+
       <tt:root name="ABAPROOT"/>
+
       <tt:template>
 
         <xsl:apply-templates select="*"/>

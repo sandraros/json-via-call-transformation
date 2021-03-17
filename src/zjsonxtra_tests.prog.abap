@@ -30,6 +30,8 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
           ls_attr   TYPE o2xsltattr,
           lt_source TYPE o2pageline_table.
 
+    DATA(normalized_xslt_source) = replace( val = i_xslt_source sub = |\r\n| with = |\n| occ = 0 ).
+
     ls_attr-xsltdesc = i_xsltname.
     IF cl_o2_api_xsltdesc=>exists( p_xslt_desc = ls_attr-xsltdesc ) = '1'.
       cl_o2_api_xsltdesc=>load(
@@ -63,7 +65,7 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
         IMPORTING
           e_source_table = lt_source
         CHANGING
-          i_string       = i_xslt_source ).
+          i_string       = normalized_xslt_source ).
       lo_xslt->set_source(
         EXPORTING
           p_source = lt_source
@@ -75,7 +77,7 @@ CLASS lcl_r3tr_xtra IMPLEMENTATION.
     ELSE.
       cl_o2_api_xsltdesc=>create_new_from_string(
         EXPORTING
-          p_source = i_xslt_source
+          p_source = normalized_xslt_source
           p_attr   = ls_attr
         IMPORTING
           p_obj    = lo_xslt
