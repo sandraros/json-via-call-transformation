@@ -6,6 +6,7 @@
 
   <xsl:variable name="smallcase" select="'abcdefghijklmnopqrstuvwxyz'"/>
   <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+  <xsl:key name="key" match="object/*[@name]" use="."/>
 
   <!-- DON'T USE PRETTY PRINTER WHICH REPLACES &#10; WITH \r\n, WHICH CAUSES SOURCE CODE -->
 
@@ -40,7 +41,14 @@
                 </xsl:attribute>
               </xsl:when>
             </xsl:choose>
-            <xsl:apply-templates select="*[1]"/>
+            <xsl:choose>
+              <xsl:when test="name(*[1])='object'">
+                <xsl:apply-templates select="*"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:apply-templates select="*[1]"/>
+              </xsl:otherwise>
+            </xsl:choose>
           </tt:loop>
         </array>
       </xsl:with-param>
@@ -63,10 +71,10 @@
             </xsl:when>
           </xsl:choose>
           <xsl:variable name="inner_nodes">
-            <xsl:apply-templates select="*"/>
+            <xsl:apply-templates select="*[position()=1]"/>
           </xsl:variable>
-          <xsl:if test="$inner_nodes and count($inner_nodes[1]/*)!=0">
-            <!-- I had <tt:group/> and $inner_nodes true at the same time, so needed to add an extra obscure condition-->
+          <xsl:if test="$inner_nodes and $inner_nodes/node()">
+            <!-- For empty_object test, I had <tt:group/> and $inner_nodes true at the same time, so had to test node()-->
             <tt:group>
               <xsl:copy-of select="$inner_nodes"/>
             </tt:group>
